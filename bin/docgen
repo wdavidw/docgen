@@ -1,0 +1,3 @@
+#!/sbin/env node
+
+require('../lib/cli');
