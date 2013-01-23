@@ -26,6 +26,9 @@
     "glob": "latest"
   },
   "optionalDependencies": {},
+  "bin": {
+    "docgen": "./bin/docgen"
+  },
   "scripts": {
     "test": "make test"
   }
