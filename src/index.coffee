@@ -50,33 +50,47 @@ convert_code = (text) ->
 docgen(options, callback)
 -------------------------
 
-Options include :
+Option is expected to be an object. Only the 
+"source" option is required and it may be provided 
+as a string or an array. Options include :
 
 *   date
+*   source
+*   destination
+*   jekyll
 
-Example
-  docgen({
-    jekyll: {
-      language: 'en',
-      layout: 'page',
-      comments: 'false'
-      sharing: 'false'
-      footer: 'false'
-      navigation: 'csv'
-      github: 'https://github.com/wdavidw/node-csv-parser'
-    }
-  })
+Provide a source path as an option
+
+    docgen(__filename, funciton(err, md){
+      console.log(md);
+    });
+
+Jeky example
+
+    docgen({
+      jekyll: {
+        language: 'en',
+        layout: 'page',
+        comments: 'false'
+        sharing: 'false'
+        footer: 'false'
+        navigation: 'csv'
+        github: 'https://github.com/wdavidw/node-csv-parser'
+      }
+    })
 ###
 docgen = module.exports = (options, callback) ->
   results = null
-  destination = null
   options.date ?= docgen.date()
+  unless options.destination?
+    options.destination = []
+  else unless Array.isArray options.destination
+    options.destination = [options.destination] 
   each()
   .files( options.source )
   .parallel( true )
   .on 'item', (source, next) ->
     basename = path.basename source, path.extname source
-    destination = "#{options.destination}/#{basename}.md" if options.destination
     fs.readFile source, 'ascii', (err, text) ->
       return callback err if err
       re = /###(.*)\n([\s\S]*?)\n( *)###/g
@@ -100,29 +114,35 @@ docgen = module.exports = (options, callback) ->
         docs += '\n'
         docs += convert_code convert_anchor match[2]
         docs += '\n'
-      if destination
-        fs.writeFile destination, docs, next
+      if options.destination.length
+        each(options.destination)
+        .on 'item', (destination, next) ->
+          destination = "#{destination}/#{basename}.md"
+          fs.writeFile destination, docs, next
+        .on 'both', (err) ->
+          next err
       else
         results = [] unless results
         results.push docs
         next()
-  .on 'both', (err) ->
+  .on 'both', (err, count) ->
     return callback err if err
-    console.log 'Documentation generated'
-    destination = process.argv[2]
-    return callback null, results unless destination
-    each()
-    .files("#{__dirname}/../doc/*.md")
-    .on 'item', (file, next) ->
-      mecano.copy
-        source: file
-        destination: destination
-        force: true
-      , next
-    .on 'both', (err) ->
-      return callback err if err
-      console.log "Documentation published: #{destination}"
-      callback null, results
+    return callback new Error "Invalid source #{JSON.stringify options.source}" if count is 0
+    # destination = options.destination
+    # return callback null, results unless destination
+    callback null, results
+    # each()
+    # .files("#{__dirname}/../doc/*.md")
+    # .on 'item', (file, next) ->
+    #   mecano.copy
+    #     source: file
+    #     destination: destination
+    #     force: true
+    #   , next
+    # .on 'both', (err) ->
+    #   return callback err if err
+    #   console.log "Documentation published: #{destination}"
+    #   callback null, results
 
 docgen.extract = (text) ->
   match = /(.*\n)?(.+)\n={3,}([\s\S]*)/g.exec text
