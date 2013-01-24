@@ -1,6 +1,6 @@
 {
   "name": "docgen",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Generate documentation from markdown comments in your source code",
   "keywords": ["documentation", "markdown"],
   "homepage": "http://www.adaltas.com/projects/node-docgen/",
